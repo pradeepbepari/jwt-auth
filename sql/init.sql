@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS CartItems (
     Cart_ID VARCHAR(255),
     User_Id VARCHAR(255),   
     Product_ID VARCHAR(225),
+    Product_Price DECIMAL(18,2),
     Quantity INT,
     created_at DATETIME,
     updated_at DATETIME,

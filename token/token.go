@@ -9,7 +9,7 @@ import (
 	"github.com/pradeep/golang-micro/model"
 )
 
-func GenerateAllToken(userid, name, email, role string) (token, refreshtoken string, err error) {
+func GenerateAllToken(userid, name, email, role string) (token string, err error) {
 	var secretkey = []byte(config.Env.Jwt_SecretKey)
 	claims := &model.SignedTokens{
 		FirstName: name,
@@ -17,22 +17,14 @@ func GenerateAllToken(userid, name, email, role string) (token, refreshtoken str
 		Email:     email,
 		Role:      role,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 1).Unix(),
+			ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
 		},
-	}
-	refreshClaims := &model.SignedTokens{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 2).Unix(),
-		},
-	}
-	accesstoken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secretkey)
-	if err != nil {
-		return "", "", fmt.Errorf("error:Accessing token")
-	}
-	refresh_tokens, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString(secretkey)
-	if err != nil {
-		return "", "", fmt.Errorf("error:Accessing Refreshtoken")
 	}
 
-	return accesstoken, refresh_tokens, nil
+	accesstoken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secretkey)
+	if err != nil {
+		return "", fmt.Errorf("error:Accessing token")
+	}
+
+	return accesstoken, nil
 }

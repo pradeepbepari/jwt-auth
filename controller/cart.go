@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/pradeep/golang-micro/model"
 	repository "github.com/pradeep/golang-micro/repository"
 	"github.com/pradeep/golang-micro/utils"
@@ -24,30 +25,48 @@ func (s *CartController) AddToCart(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	product, err := s.cart.CheckProducts(cart.Product_Id)
+	prod, err := s.product.ProductBYID(cart.Product_Id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	product.Quantity += cart.Quantity
+	product, err := s.cart.CheckProductsInCart(cart.Product_Id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
 	if product.Product_Id == cart.Product_Id {
+		product.Quantity += cart.Quantity
 		_, err := s.cart.UpdateCart(product.ID.String(), product.Product_Id, product.Quantity)
 		if err != nil {
 			utils.WriteError(w, http.StatusInternalServerError, err)
 			return
 		}
 	} else {
-		if err := s.cart.AddCartsItem(model.Cart{
-			User_ID:    user_id,
-			Product_Id: cart.Product_Id,
-			Quantity:   cart.Quantity,
-		}); err != nil {
+		cart, err := s.cart.AddCartsItem(model.Cart{
+			User_ID:       user_id,
+			Product_Id:    prod.Product_ID,
+			Quantity:      cart.Quantity,
+			Product_Price: prod.Product_Price,
+		})
+		if err != nil {
 			utils.WriteError(w, http.StatusInternalServerError, err)
 			return
 		}
+		utils.WriteJson(w, http.StatusOK, map[string]string{"cart-id": cart.ID.String()})
 	}
 
-	utils.WriteJson(w, http.StatusOK, map[string]string{"message": "product added to cart"})
+}
+func (s *CartController) ViewCartItems(w http.ResponseWriter, r *http.Request) {
+	param := mux.Vars(r)
+	cart_id := param["cart-id"]
+	cart, err := s.cart.ViewCart(cart_id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	utils.WriteJson(w, http.StatusOK, cart)
 }
 func (s *CartController) OrderItems(w http.ResponseWriter, r *http.Request) {
 	user_id := r.Header.Get("id")

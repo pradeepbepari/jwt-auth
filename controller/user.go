@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/pradeep/golang-micro/model"
@@ -78,20 +79,21 @@ func (s *UserController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("please emter invalid credientals"))
 		return
 	}
-	tokens, _, err := token.GenerateAllToken(emp.User_id, emp.FirstName, emp.Email, emp.Role)
+	tokens, err := token.GenerateAllToken(emp.User_id, emp.FirstName, emp.Email, emp.Role)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	// http.SetCookie(
-	// 	w, &http.Cookie{
-	// 		Name:    "jwt-token",
-	// 		Value:   tokens,
-	// 		Expires: time.Now().Add(time.Hour * 12),
-	// 	},
-	// )
-	utils.WriteJson(w, http.StatusOK, tokens)
-	//utils.WriteJson(w, http.StatusOK, map[string]string{"message": "you are loggin successfully."})
+	http.SetCookie(
+		w, &http.Cookie{
+			Name:    "jwt-token",
+			Value:   tokens,
+			Expires: time.Now().Add(time.Hour * 12),
+		},
+	)
+	w.Header().Add("Authorization", "Bearer "+tokens)
+	//	utils.WriteJson(w, http.StatusOK, tokens)
+	utils.WriteJson(w, http.StatusOK, map[string]string{"message": "you are loggin successfully."})
 
 }
 func (s *UserController) GetAllProducts(w http.ResponseWriter, r *http.Request) {
@@ -113,11 +115,11 @@ func (s *UserController) GetProductByID(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	if product.Product_ID == "" {
-		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("no users found / invalid id"))
+	if product.Product_ID != "" {
+		utils.WriteJson(w, http.StatusOK, product)
 		return
 	} else {
-		utils.WriteJson(w, http.StatusOK, product)
+		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("no users found / invalid id"))
 		return
 	}
 

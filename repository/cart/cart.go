@@ -19,29 +19,32 @@ type BackendRepo struct {
 func NewBackendRepo(db *sql.DB) *BackendRepo {
 	return &BackendRepo{db: db}
 }
-func (s *BackendRepo) AddCartsItem(item model.Cart) error {
+func (s *BackendRepo) AddCartsItem(item model.Cart) (*model.Cart, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		log.Panic(err)
-		return nil
+		return nil, err
 	}
 	item.ID = uuid.New()
 	layout := config.Env.TimeFormat
 	item.Created_at, _ = time.Parse(layout, time.Now().Format(layout))
 	item.Updated_at, _ = time.Parse(layout, time.Now().Format(layout))
-	_, err = tx.Exec(query.AddCart, item.ID.String(), item.User_ID, item.Product_Id, item.Quantity, item.Created_at, item.Updated_at)
+	_, err = tx.Exec(query.AddCart, item.ID.String(), item.User_ID, item.Product_Id, item.Product_Price, item.Quantity, item.Created_at, item.Updated_at)
 	if err != nil {
 		log.Panic(err)
-		return nil
+		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
 		log.Panic(err)
-		return nil
+		return nil, err
 	}
-	return nil
+	return &model.Cart{
+		ID: item.ID,
+	}, err
 }
-func (s *BackendRepo) CheckProducts(p_id string) (*model.Cart, error) {
-	rows, err := s.db.Query(query.CheckProductInCart, p_id)
+func (s *BackendRepo) CheckProductsInCart(pid string) (*model.Cart, error) {
+	log.Println(pid)
+	rows, err := s.db.Query(query.CheckProductInCart, pid)
 	if err != nil {
 		log.Panic(err)
 		return nil, err
@@ -49,13 +52,22 @@ func (s *BackendRepo) CheckProducts(p_id string) (*model.Cart, error) {
 	defer rows.Close()
 	var cart model.Cart
 	if rows.Next() {
-		err := rows.Scan(&cart.ID, &cart.User_ID, &cart.Product_Id, &cart.Quantity, &cart.Created_at, &cart.Updated_at)
+		err := rows.Scan(&cart.ID, &cart.User_ID, &cart.Product_Id, &cart.Product_Price, &cart.Quantity, &cart.Created_at, &cart.Updated_at)
 		if err != nil {
 			log.Panic(err)
 			return nil, err
 		}
 	}
-	return &cart, nil
+	log.Println(cart)
+	return &model.Cart{
+		ID:            cart.ID,
+		User_ID:       cart.User_ID,
+		Product_Id:    cart.Product_Id,
+		Product_Price: cart.Product_Price,
+		Quantity:      cart.Quantity,
+		Created_at:    cart.Created_at,
+		Updated_at:    cart.Updated_at,
+	}, nil
 }
 func (s *BackendRepo) UpdateCart(id, cart_id string, qty int) (*model.Cart, error) {
 	tx, err := s.db.Begin()
@@ -100,4 +112,22 @@ func (s *BackendRepo) PurchaseOrders(order model.Order_Status) (*model.Order_Sta
 	return &model.Order_Status{
 		Order_ID: order.Order_ID,
 	}, nil
+}
+
+func (s *BackendRepo) ViewCart(cartId string) (*model.Cart, error) {
+	rows, err := s.db.Query(query.ViewCart, cartId)
+	if err != nil {
+		log.Panic(err)
+		return nil, err
+	}
+	defer rows.Close()
+	var cart model.Cart
+	if rows.Next() {
+		err := rows.Scan(&cart.ID, &cart.User_ID, &cart.Product_Id, &cart.Product_Price, &cart.Quantity, &cart.Created_at, &cart.Updated_at)
+		if err != nil {
+			log.Panic(err)
+			return nil, err
+		}
+	}
+	return &cart, nil
 }

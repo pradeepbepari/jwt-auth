@@ -45,7 +45,7 @@ func (s *AuthController) GetEmployeeByID(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		if emp.User_id == "" {
-			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("no users found / invalid id"))
+			utils.WriteError(w, http.StatusNotFound, fmt.Errorf("no users found / invalid id"))
 			return
 		} else {
 			utils.WriteJson(w, http.StatusOK, emp)

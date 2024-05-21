@@ -20,23 +20,40 @@ func NewProductHandular(product repository.Product) *ProductController {
 
 func (s *ProductController) AddProduct(w http.ResponseWriter, r *http.Request) {
 	role := r.Header.Get("role")
-	if role == "ADMIN" || role == "Admin" {
+	if role == "ADMIN" || role == "Admin" || role == "admin" {
 		var product model.ProductEntry
 		if err := utils.ParseJson(r, &product); err != nil {
 			utils.WriteError(w, http.StatusBadRequest, err)
 			return
 		}
-		err := s.product.CreateProduct(model.Product{
+		prod, err := s.product.CheckProductsByName(product.Product_Name)
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internal error"))
+			return
+		}
+		if prod.Product_Name == product.Product_Name {
+			prod.Product_Price = product.Product_Price
+			prod.Product_Quantity += product.Product_Quantity
+			err := s.product.UpdateProductByName(prod.Product_ID.String(), prod.Product_Price, prod.Product_Quantity)
+			if err != nil {
+				utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internal error"))
+				return
+			}
+			utils.WriteJson(w, http.StatusOK, map[string]string{"message": "product added"})
+			return
+		}
+		ok := s.product.CreateProduct(model.Product{
 			Product_Name:     product.Product_Name,
 			Product_Quantity: product.Product_Quantity,
 			Product_Price:    product.Product_Price,
 		})
-		if err != nil {
+		if ok != nil {
 			utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("internal error"))
 			return
 		}
 		utils.WriteJson(w, http.StatusOK, map[string]string{"message": "product added"})
 		return
+
 	}
 	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("you are not authorised to do this"))
 }
