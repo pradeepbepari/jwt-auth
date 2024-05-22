@@ -11,11 +11,21 @@ import (
 	"github.com/pradeep/golang-micro/utils"
 )
 
-func Authenticated(req http.HandlerFunc) http.HandlerFunc {
+func Authenticated(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("jwt-token")
-		claims := model.SignedTokens{}
-		tokens, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
+		//token := r.Header.Get("jwt-token")
+		token, err := r.Cookie("jwt-token")
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		}
+		if token == nil {
+			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("no token provided"))
+			return
+		}
+		tokenstr := token.Value
+		claims := &model.SignedTokens{}
+		tkn, err := jwt.ParseWithClaims(tokenstr, claims, func(t *jwt.Token) (interface{}, error) {
 			return []byte(config.Env.Jwt_SecretKey), nil
 		})
 		if err != nil {
@@ -27,7 +37,7 @@ func Authenticated(req http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !tokens.Valid {
+		if !tkn.Valid {
 			utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid token"))
 			return
 		}
@@ -42,6 +52,6 @@ func Authenticated(req http.HandlerFunc) http.HandlerFunc {
 		r.Header.Set("id", claims.Id)
 		r.Header.Set("role", claims.Role)
 
-		req(w, r)
+		next(w, r)
 	}
 }

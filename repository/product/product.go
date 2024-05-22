@@ -58,3 +58,40 @@ func (s *BackendRepo) DeleteByProductId(id string) error {
 	}
 	return nil
 }
+func (s *BackendRepo) CheckProductsByName(name string) (*model.Product, error) {
+	rows, err := s.db.Query(query.GetProductByName, name)
+	if err != nil {
+		log.Panic(err)
+		return nil, err
+	}
+	defer rows.Close()
+	var prod model.Product
+	if rows.Next() {
+		err := rows.Scan(&prod.Product_ID, &prod.Product_Name, &prod.Product_Price,
+			&prod.Product_Quantity, &prod.Created_at, &prod.Updated_at)
+		if err != nil {
+			log.Panic(err)
+			return nil, err
+		}
+	}
+	return &prod, nil
+}
+func (s *BackendRepo) UpdateProductByName(id string, price float64, qty int) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Panic(err)
+		return nil
+	}
+	layout := config.Env.TimeFormat
+	time, _ := time.Parse(layout, time.Now().Format(layout))
+	_, err = tx.Exec(query.UpdateProductByName, qty, price, time, id)
+	if err != nil {
+		log.Panic(err)
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		log.Panic(err)
+		return err
+	}
+	return nil
+}

@@ -29,18 +29,24 @@ const (
 
 	GetProductByID = `SELECT * FROM PRODUCTS WHERE Product_UUID=?;`
 
+	GetProductByName = `SELECT * FROM PRODUCTS WHERE Product_Name=?;`
+
 	DeleteByid = `DELETE FROM PRODUCTS WHERE Product_UUID=?;`
 
 	UpdateProduct = `UPDATE PRODUCTS SET Product_Quantity=?,updated_at=? WHERE Product_UUID=?;`
+
+	UpdateProductByName = `UPDATE PRODUCTS SET Product_Quantity=?, Product_Price=?, updated_at=? WHERE Product_UUID=?;`
 )
 const (
-	AddCart = `Insert INTO CartItems( Cart_ID, User_Id, Product_ID, Quantity, created_at,updated_at )
-	values(?,?,?,?,?,?);`
+	AddCart = `Insert INTO CartItems( Cart_ID, User_Id, Product_ID,Product_Price, Quantity, created_at,updated_at )
+	values(?,?,?,?,?,?,?);`
 
-	CheckProductInCart = `SELECT * FROM CartItems WHERE Product_ID=?`
+	CheckProductInCart = `SELECT Cart_ID, User_Id, Product_ID,Product_Price, Quantity, created_at,updated_at FROM CartItems WHERE Product_ID=?`
 
 	UpdateCart = `UPDATE CartItems SET  Quantity=?, updated_at=? WHERE Product_ID=? AND Cart_ID=?;`
 
 	Orderitem = `INSERT INTO Orders(Order_ID,User_Id,Product_ID,Quantity,Address,Total_Price,created_at)
 	values(?,?,?,?,?,?,?)`
+
+	ViewCart = `SELECT * FROM CartItems WHERE Cart_ID=?`
 )
